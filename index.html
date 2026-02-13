@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pandora A/B Calculator (CL + Power + Revenue)</title>
 
+  <!-- ✅ FAVICON (keep this; use favicon.ico in repo root) -->
+  <link rel="icon" href="favicon.ico">
+
   <style>
     :root{
       --bg:#ffffff;
@@ -75,12 +78,6 @@
       letter-spacing:-.4px;
       line-height:1.1;
     }
-    .sup{
-      font-size:11px;
-      font-weight:800;
-      transform: translateY(2px);
-      opacity:.9;
-    }
     .subtitle{
       margin:0;
       font-size:12px;
@@ -92,7 +89,7 @@
       justify-content:flex-end;
       min-width:140px;
     }
-    /* 2) Header cleanup: only PANDORA (no dots) */
+    /* Keep ONLY PANDORA text */
     .pandora-logo{
       height:22px;
       width:auto;
@@ -161,9 +158,8 @@
       .row{grid-template-columns:1fr;}
     }
 
-    /* 3) CTA styles */
+    /* CTA buttons */
     .btn{
-      margin-top:16px;
       padding:12px 14px;
       border:1px solid #111;
       border-radius: 14px;
@@ -173,11 +169,33 @@
       font-weight:800;
       font-size:14px;
       transition: background-color .25s ease, color .25s ease;
-      /* no layout shift: keep border same */
+      white-space:nowrap;
     }
     .btn:hover{
       background: var(--cta-hover);
       color:#111;
+    }
+
+    /* Reset button: same style, slightly outlined */
+    .btn.reset{
+      background:#fff;
+      color:#111;
+      border:1px solid #111;
+    }
+    .btn.reset:hover{
+      background: var(--cta-hover);
+      color:#111;
+    }
+
+    /* Put Calculate + Reset on same row */
+    .cta-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-top:16px;
+    }
+    .cta-row .btn{
+      flex:0 0 auto;
     }
 
     /* KPIs */
@@ -252,7 +270,7 @@
       user-select:none;
     }
 
-    /* 5) Decision styling */
+    /* Decision styling */
     .decision-good{ color: var(--ok) !important; }
     .decision-bad{ color: var(--bad) !important; }
   </style>
@@ -264,14 +282,14 @@
     <div class="header-row">
       <div class="header-left">
         <div class="title-wrap">
+          <!-- ✅ Removed “AH” -->
           <h1 class="title">A/B Test Calculator</h1>
-          <span class="sup">AH</span>
         </div>
         <p class="subtitle">CL • Power • Revenue — internal helper</p>
       </div>
 
       <div class="header-right">
-        <!-- Clean: only PANDORA -->
+        <!-- ✅ Keep PANDORA text only -->
         <svg class="pandora-logo" viewBox="0 0 190 34" xmlns="http://www.w3.org/2000/svg" aria-label="Pandora">
           <text x="0" y="25" font-family="Arial, sans-serif" font-size="26" font-weight="800" fill="#111">PANDORA</text>
         </svg>
@@ -439,7 +457,11 @@
           </div>
         </div>
 
-        <button class="btn" onclick="calc()">Calculate</button>
+        <!-- ✅ Calculate + Reset row -->
+        <div class="cta-row">
+          <button class="btn" onclick="calc()">Calculate</button>
+          <button class="btn reset" type="button" onclick="resetAll()">Reset</button>
+        </div>
 
         <div class="note">
           Revenue estimate:
@@ -466,7 +488,7 @@
           <div class="kpi"><b>SE difference</b><span id="seDiff"></span></div>
           <div class="kpi"><b>z-score</b><span id="z"></span></div>
 
-          <!-- 4) Swap positions: OBSERVED POWER now before P-VALUE -->
+          <!-- OBSERVED POWER before P-VALUE -->
           <div class="kpi red-highlight"><b>Observed Power</b><span id="power"></span></div>
           <div class="kpi"><b>p-value</b><span id="p"></span></div>
 
@@ -577,6 +599,10 @@ function setAllWaiting(){
   const curOut = document.getElementById("curOut");
   curOut.textContent = document.getElementById("currency").value;
   curOut.classList.remove("waiting");
+
+  // Decision should not be green/red when waiting
+  const sigEl = document.getElementById("sig");
+  sigEl.classList.remove("decision-good","decision-bad");
 }
 
 function anyInputProvided(){
@@ -602,6 +628,30 @@ function clearResultsIfEmpty(){
   } else {
     calc();
   }
+}
+
+/* ===== Reset (NEW) ===== */
+function resetAll(){
+  // Clear inputs
+  const idsToClear = ["nA","nB","xA","xB","cvrA","cvrB","rpsA","rpsB","lastYearSessions"];
+  idsToClear.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  // Reset selects to defaults (keep your defaults)
+  document.getElementById("inputMode").value = "cvr";
+  document.getElementById("cvrFormat").value = "pct";
+  document.getElementById("hypo").value = "two";
+  document.getElementById("conf").value = "0.95";
+  document.getElementById("market").value = "FR";
+  setCurrencyFromMarket();
+
+  // Update mode visibility
+  toggleMode();
+
+  // Restore waiting state
+  setAllWaiting();
 }
 
 /* ===== Main calc (EQUATIONS UNCHANGED) ===== */
@@ -702,7 +752,7 @@ function calc(){
   setVal("cl", (CL*100).toFixed(2) + "%");
   setVal("power", (power*100).toFixed(2) + "%");
 
-  // 5) Decision styling logic
+  // Decision styling
   const sigEl = document.getElementById("sig");
   sigEl.textContent = significant ? "Significant" : "Not significant";
   sigEl.classList.remove("waiting","decision-good","decision-bad");
